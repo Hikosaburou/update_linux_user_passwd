@@ -1,0 +1,2 @@
+# update_linux_user_passwd
+EC2(Linux)のユーザパスワードを自動でローテーションするやつ
