@@ -1,0 +1,52 @@
+service: updateEc2UserPassword
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: ${self:custom.envs.REGION}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "logs:CreateLogGroup"
+        - "logs:CreateLogStream"
+        - "logs:PutLogEvents"
+      Resource: "arn:aws:logs:*:*:*"
+    - Effect: "Allow"
+      Action:
+        - "kms:Decrypt"
+        - "kms:Encrypt"
+        - "kms:ReEncrypt*"
+        - "kms:GenerateDataKey*"
+        - "kms:DescribeKey"
+      Resource: 
+        Fn::Join:
+          - ""
+          - - "arn:aws:kms:${self:provider.region}:"
+            - "${self:custom.envs.ACCOUNT_ID}:"
+            - "key/"
+            - "${self:custom.envs.KMS_KEY_ID}"
+    - Effect: "Allow"
+      Action:
+        - "ssm:SendCommand"
+        - "ssm:PutParameter"
+        - "ssm:GetParameters"
+      Resource: "*"
+
+custom:
+  stage: "${opt:stage, self:provider.stage}"
+  envs: "${file(env-${self:custom.stage}.yml)}"
+
+package:
+  exclude:
+    - venv/**
+    - Python
+    - tests/**
+
+functions:
+  runner:
+    handler: updateEc2UserPassword.runner
+    events:
+      - schedule: rate(80 days)
+    memorySize: 128
+    timeout: 60
+    environment: ${self:custom.envs}
